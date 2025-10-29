@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slip Gaji Karyawan</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h2>Slip Gaji Karyawan</h2>
+
+    <div class="form">
+      <label>Nama Karyawan</label>
+      <input type="text" id="nama" placeholder="Masukkan nama karyawan">
+
+      <label>Gaji Harian (Rp)</label>
+      <input type="number" id="gajiHarian" value="70000">
+
+      <label>Jumlah Hari Kerja</label>
+      <input type="number" id="hariKerja" placeholder="Masukkan jumlah hari kerja">
+
+      <label>Lembur per Jam (Rp)</label>
+      <input type="number" id="lemburPerJam" value="7000">
+
+      <h3>Detail Lembur</h3>
+      <div id="lemburContainer">
+        <div class="lemburRow">
+          <input type="text" placeholder="Hari/Tanggal (misal: Sabtu, 26 Okt)" class="hariLembur">
+          <input type="text" placeholder="Waktu (misal: 18:00 - 21:00)" class="waktuLembur">
+          <input type="number" placeholder="Jumlah Jam" class="jamLembur">
+        </div>
+      </div>
+
+      <button type="button" onclick="tambahLembur()">+ Tambah Hari Lembur</button>
+      <button type="button" onclick="hitungGaji()">Hitung Gaji</button>
+    </div>
+
+    <div id="hasil" class="slip"></div>
+  </div>
+
+  <script>
+    function tambahLembur() {
+      const container = document.getElementById("lemburContainer");
+      const div = document.createElement("div");
+      div.classList.add("lemburRow");
+      div.innerHTML = `
+        <input type="text" placeholder="Hari/Tanggal (misal: Minggu, 27 Okt)" class="hariLembur">
+        <input type="text" placeholder="Waktu (misal: 17:00 - 20:00)" class="waktuLembur">
+        <input type="number" placeholder="Jumlah Jam" class="jamLembur">
+      `;
+      container.appendChild(div);
+    }
+
+    function hitungGaji() {
+      const nama = document.getElementById("nama").value;
+      const gajiHarian = parseInt(document.getElementById("gajiHarian").value);
+      const hariKerja = parseInt(document.getElementById("hariKerja").value);
+      const lemburPerJam = parseInt(document.getElementById("lemburPerJam").value);
+
+      if (!nama || !gajiHarian || !hariKerja) {
+        alert("Harap isi semua data utama!");
+        return;
+      }
+
+      const lemburRows = document.querySelectorAll(".lemburRow");
+      let totalJamLembur = 0;
+      let detailLembur = "";
+
+      lemburRows.forEach(row => {
+        const hari = row.querySelector(".hariLembur").value;
+        const waktu = row.querySelector(".waktuLembur").value;
+        const jam = parseInt(row.querySelector(".jamLembur").value) || 0;
+
+        totalJamLembur += jam;
+        if (hari || waktu || jam) {
+          detailLembur += `
+            <tr>
+              <td>${hari || "-"}</td>
+              <td>${waktu || "-"}</td>
+              <td>${jam}</td>
+              <td>Rp ${(lemburPerJam * jam).toLocaleString()}</td>
+            </tr>
+          `;
+        }
+      });
+
+      const gajiPokok = gajiHarian * hariKerja;
+      const totalLembur = lemburPerJam * totalJamLembur;
+      const totalGaji = gajiPokok + totalLembur;
+
+      document.getElementById("hasil").innerHTML = `
+        <div id="slipGajiPDF">
+          <h3>Slip Gaji Bulanan</h3>
+          <table>
+            <tr>
+              <th>Nama</th>
+              <th>Gaji Harian</th>
+              <th>Hari Kerja</th>
+              <th>Gaji Pokok</th>
+            </tr>
+            <tr>
+              <td>${nama}</td>
+              <td>Rp ${gajiHarian.toLocaleString()}</td>
+              <td>${hariKerja}</td>
+              <td>Rp ${gajiPokok.toLocaleString()}</td>
+            </tr>
+          </table>
+
+          <h4>Detail Lembur</h4>
+          <table>
+            <tr>
+              <th>Hari / Tanggal</th>
+              <th>Waktu</th>
+              <th>Jumlah Jam</th>
+              <th>Total Lembur</th>
+            </tr>
+            ${detailLembur || "<tr><td colspan='4'>Tidak ada lembur</td></tr>"}
+            <tr style="font-weight:bold; background:#e8f0ff">
+              <td colspan="2">Total Jam Lembur</td>
+              <td>${totalJamLembur}</td>
+              <td>Rp ${totalLembur.toLocaleString()}</td>
+            </tr>
+          </table>
+
+          <h4>Total Gaji Akhir: <span style="color:red">Rp ${totalGaji.toLocaleString()}</span></h4>
+        </div>
+        <button onclick="simpanPDF('${nama}')">Simpan Slip PDF</button>
+      `;
+    }
+
+    function simpanPDF(nama) {
+      const element = document.getElementById("slipGajiPDF");
+      const opt = {
+        margin: 0.5,
+        filename: `Slip_Gaji_${nama.replace(/\s+/g, "_")}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+  </script>
+</body>
+</html>
